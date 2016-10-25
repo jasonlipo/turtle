@@ -31,30 +31,31 @@ type ColouredLine
 
 -- |Returns the rotation angle for the given system.
 angle :: System -> Float
-angle = error "TODO: implement angle"
+angle (x, _, _) = x
 
 -- |Returns the base string for the given system.
 base :: System -> String
-base = error "TODO: implement base"
+base (_, x, _) = x
 
 -- |Returns the set of rules for the given system.
 rules :: System -> Rules
-rules = error "TODO: implement rules"
+rules (_, _, x) = x
 
 
 -- |Look up a character in the given set of rules.
 --
 --  Pre: the character exists in the set of rules.
 lookupChar :: Char -> Rules -> String
-lookupChar = error "TODO: implement lookupChar"
+lookupChar c rules = concat [ y | (x, y) <- rules, x == c ]
 
 -- |Expand a command once using the given set of rules.
 expandOne :: Rules -> String -> String
-expandOne = error "TODO: implement expandOne"
+expandOne rules base = concat [ lookupChar x rules | x <- base ]
 
 -- |Expand a command `n' times using the given set of rules.
 expand :: Rules -> String -> Int -> String
-expand = error "TODO: implement expand"
+expand rules base 0 = base
+expand rules base n = expand rules (expandOne rules base) (n-1)
 
 -- |Move a turtle.
 --
@@ -62,7 +63,12 @@ expand = error "TODO: implement expand"
 --  * 'L' rotates left according to the given angle.
 --  * 'R' rotates right according to the given angle.
 move :: Char -> TurtleState -> Float -> TurtleState
-move = error "TODO: implement move"
+move action ((x, y), angle) dir
+  | action == 'F' = ((new_x, new_y), angle)
+  | otherwise = ((new_x, new_y), new_angle)
+  where
+    (new_x, new_y) = (x, y)
+    new_angle = angle
 
 -- |Trace lines drawn by a turtle using the given colour, following the
 --  commands in the string and assuming the given initial angle of rotation.
@@ -78,7 +84,6 @@ trace2 = error "TODO: implement trace2"
 
 
 --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
-
 --  Some test systems.
 
 cross
