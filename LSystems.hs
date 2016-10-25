@@ -62,7 +62,11 @@ expand rules base n = concat [ expandOne rules base | x <- [1..n] ]
 --  * 'L' rotates left according to the given angle.
 --  * 'R' rotates right according to the given angle.
 move :: Char -> TurtleState -> Float -> TurtleState
-move = error "TODO: implement move"
+move action ((x, y), angle) dir
+  | action == "F" = ((new_x, new_y), angle)
+  | otherwise = ((new_x, new_y), new_angle)
+  where
+        
 
 -- |Trace lines drawn by a turtle using the given colour, following the
 --  commands in the string and assuming the given initial angle of rotation.
