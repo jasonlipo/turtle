@@ -75,21 +75,42 @@ move action ((x, y), angle) dir
 --  commands in the string and assuming the given initial angle of rotation.
 --  Method 1
 trace1 :: String -> Float -> Colour -> [ColouredLine]
-trace1 cmds angle colour
-  = trace1' (0, 0) cmds angle
+trace1 cmds rotation colour
+  = trace1' (0, 0) 90 cmds rotation
   where
-    trace1' _ [] _ = []
-    trace1' (x, y) (currentCmd : remCmds) angle
-      | currentCmd == 'F' = ((x, y), (newX, newY), colour) : (trace1' (newX, newY) remCmds newAngle)
-      | otherwise = trace1' (newX, newY) remCmds newAngle
+    trace1FindBracket (x : xs) count
+      | x == '[' = trace1FindBracket xs (count+1)
+      | x == ']' =
+        if count == 0
+        then xs
+        else trace1FindBracket xs (count-1)
+      | otherwise = trace1FindBracket xs count
+    trace1' _ _ [] _ = []
+    trace1' (x, y) angle (currentCmd : remCmds) rotation
+      | currentCmd == ']' = []
+      | currentCmd == '[' = (trace1' (x, y) angle remCmds rotation) ++ (trace1' (x, y) resetAngle (trace1FindBracket remCmds 0) rotation)
+      | currentCmd == 'F' = ((x, y), (newX, newY), colour) : (trace1' (newX, newY) newAngle remCmds rotation)
+      | otherwise = trace1' (newX, newY) newAngle remCmds rotation
       where
-        ((newX, newY), newAngle) = move currentCmd ((x, y), angle) 90
+        resetAngle = 90
+        ((newX, newY), newAngle) = move currentCmd ((x, y), angle) rotation
 
 -- |Trace lines drawn by a turtle using the given colour, following the
 --  commands in the string and assuming the given initial angle of rotation.
 --  Method 2
 trace2 :: String -> Float -> Colour -> [ColouredLine]
-trace2 = error "TODO: implement trace2"
+trace2 cmds rotation colour
+  = trace2' (0, 0) 90 cmds rotation [(0, 0)]
+  where
+    trace2' _ _ [] _ _ = []
+    trace2' (x, y) angle (currentCmd : remCmds) rotation states@((xState, yState) : remStates)
+      | currentCmd == '[' = trace2' (x, y) angle remCmds rotation ((x, y) : states)
+      | currentCmd == ']' = trace2' (xState, yState) resetAngle remCmds rotation remStates
+      | currentCmd == 'F' = ((x, y), (newX, newY), colour) : (trace2' (newX, newY) newAngle remCmds rotation states)
+      | otherwise = trace2' (newX, newY) newAngle remCmds rotation states
+      where
+        resetAngle = 90
+        ((newX, newY), newAngle) = move currentCmd ((x, y), angle) rotation
 
 
 --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
