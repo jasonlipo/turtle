@@ -75,14 +75,15 @@ move action ((x, y), angle) dir
 --  commands in the string and assuming the given initial angle of rotation.
 --  Method 1
 trace1 :: String -> Float -> Colour -> [ColouredLine]
-trace1 path angle col
-  = trace1' (0, 0) path angle []
+trace1 cmds angle colour
+  = trace1' (0, 0) cmds angle
   where
-    trace1' (x, y) (pathCurrent : pathRem) angle cmds
-      | pathRem == [] = []
-      | otherwise = (trace1' (newX, newY) pathRem) : cmds
+    trace1' _ [] _ = []
+    trace1' (x, y) (currentCmd : remCmds) angle
+      | currentCmd == 'F' = ((x, y), (newX, newY), colour) : (trace1' (newX, newY) remCmds newAngle)
+      | otherwise = trace1' (newX, newY) remCmds newAngle
       where
-        ((newX, newY), newAngle) = move pathCurrent 
+        ((newX, newY), newAngle) = move currentCmd ((x, y), angle) 90
 
 -- |Trace lines drawn by a turtle using the given colour, following the
 --  commands in the string and assuming the given initial angle of rotation.
