@@ -25,7 +25,7 @@ type Stack
 
 type ColouredLine
   = (Vertex, Vertex, Colour)
-
+  
 --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
 --  Functions for working with systems.
 
@@ -64,17 +64,25 @@ expand rules base n = expand rules (expandOne rules base) (n-1)
 --  * 'R' rotates right according to the given angle.
 move :: Char -> TurtleState -> Float -> TurtleState
 move action ((x, y), angle) dir
-  | action == 'F' = ((new_x, new_y), angle)
-  | otherwise = ((new_x, new_y), new_angle)
+  | action == 'F' = ((newX, newY), angle)
+  | otherwise = ((x, y), newAngle)
   where
-    (new_x, new_y) = (x, y)
-    new_angle = angle
+  angleRad = (pi * angle) / 180
+  (newX, newY) = (x + cos angleRad, y + sin angleRad)
+  newAngle = if action == 'L' then angle + dir else angle - dir
 
 -- |Trace lines drawn by a turtle using the given colour, following the
 --  commands in the string and assuming the given initial angle of rotation.
 --  Method 1
 trace1 :: String -> Float -> Colour -> [ColouredLine]
-trace1 = error "TODO: implement trace1"
+trace1 path angle col
+  = trace1' (0, 0) path angle []
+  where
+    trace1' (x, y) (pathCurrent : pathRem) angle cmds
+      | pathRem == [] = []
+      | otherwise = (trace1' (newX, newY) pathRem) : cmds
+      where
+        ((newX, newY), newAngle) = move pathCurrent 
 
 -- |Trace lines drawn by a turtle using the given colour, following the
 --  commands in the string and assuming the given initial angle of rotation.
