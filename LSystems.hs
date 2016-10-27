@@ -26,7 +26,7 @@ type Stack
 type ColouredLine
   = (Vertex, Vertex, Colour)
   
---  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
+--  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- 
 --  Functions for working with systems.
 
 -- |Returns the rotation angle for the given system.
@@ -71,49 +71,56 @@ move action ((x, y), angle) dir
   (newX, newY) = (x + cos angleRad, y + sin angleRad)
   newAngle = if action == 'L' then angle + dir else angle - dir
 
+initState :: TurtleState
+initState = ((0, 0), 90.0)
+
 -- |Trace lines drawn by a turtle using the given colour, following the
---  commands in the string and assuming the given initial angle of rotation.
+--  commands in the string and assuming the given initial angle
+--  of rotation.
 --  Method 1
 trace1 :: String -> Float -> Colour -> [ColouredLine]
-trace1 cmds rotation colour
-  = trace1' (0, 0) 90 cmds rotation
+trace1 cmds rot col
+  = trace1' initState cmds rot
   where
-    trace1FindBracket (x : xs) count
-      | x == '[' = trace1FindBracket xs (count+1)
+    trace1FBrac (x : xs) count
+      | x == '[' = trace1FBrac xs (count+1)
       | x == ']' =
         if count == 0
         then xs
-        else trace1FindBracket xs (count-1)
-      | otherwise = trace1FindBracket xs count
-    trace1' _ _ [] _ = []
-    trace1' (x, y) angle (currentCmd : remCmds) rotation
-      | currentCmd == ']' = []
-      | currentCmd == '[' = (trace1' (x, y) angle remCmds rotation) ++ (trace1' (x, y) resetAngle (trace1FindBracket remCmds 0) rotation)
-      | currentCmd == 'F' = ((x, y), (newX, newY), colour) : (trace1' (newX, newY) newAngle remCmds rotation)
-      | otherwise = trace1' (newX, newY) newAngle remCmds rotation
+        else trace1FBrac xs (count-1)
+      | otherwise = trace1FBrac xs count
+    trace1' _ [] _ = []
+    trace1' pos (cmdH : cmdT) rot
+      | cmdH == ']' = []
+      | cmdH == '[' = (trace1' pos cmdT rot) ++
+						(trace1' pos (trace1FBrac cmdT 0) rot)
+      | cmdH == 'F' = ((x, y), (x', y'), col) : (trace1' pos' cmdT rot)
+      | otherwise = trace1' pos' cmdT rot
       where
-        resetAngle = 90
-        ((newX, newY), newAngle) = move currentCmd ((x, y), angle) rotation
+		((x, y), a) = pos
+		pos'@((x', y'), a') = move cmdH ((x, y), a) rot
+
 
 -- |Trace lines drawn by a turtle using the given colour, following the
---  commands in the string and assuming the given initial angle of rotation.
+--  commands in the string and assuming the given initial angle
+--  of rotation.
 --  Method 2
 trace2 :: String -> Float -> Colour -> [ColouredLine]
-trace2 cmds rotation colour
-  = trace2' (0, 0) 90 cmds rotation [(0, 0)]
+trace2 cmds rot col
+  = trace2' initState cmds rot [initState]
   where
-    trace2' _ _ [] _ _ = []
-    trace2' (x, y) angle (currentCmd : remCmds) rotation states@((xState, yState) : remStates)
-      | currentCmd == '[' = trace2' (x, y) angle remCmds rotation ((x, y) : states)
-      | currentCmd == ']' = trace2' (xState, yState) resetAngle remCmds rotation remStates
-      | currentCmd == 'F' = ((x, y), (newX, newY), colour) : (trace2' (newX, newY) newAngle remCmds rotation states)
-      | otherwise = trace2' (newX, newY) newAngle remCmds rotation states
+    trace2' _ [] _ _ = []
+    trace2' pos (cmdH : cmdT) rot tStates@(stateH : stateT)
+      | cmdH == '[' = trace2' pos cmdT rot (pos : tStates)
+      | cmdH == ']' = trace2' stateH cmdT rot stateT
+      | cmdH == 'F' = ((x, y), (x', y'), col) :
+						(trace2' pos' cmdT rot tStates)
+      | otherwise = trace2' pos' cmdT rot tStates
       where
-        resetAngle = 90
-        ((newX, newY), newAngle) = move currentCmd ((x, y), angle) rotation
+        ((x, y), a) = pos
+        pos'@((x', y'), a') = move cmdH ((x, y), a) rot
 
-
---  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
+--  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
 --  Some test systems.
 
 cross
