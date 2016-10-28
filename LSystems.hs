@@ -25,8 +25,8 @@ type Stack
 
 type ColouredLine
   = (Vertex, Vertex, Colour)
-  
---  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  -- 
+
+--  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
 --  Functions for working with systems.
 
 -- |Returns the rotation angle for the given system.
@@ -63,14 +63,17 @@ expand rules base n = expand rules (expandOne rules base) (n-1)
 --  * 'L' rotates left according to the given angle.
 --  * 'R' rotates right according to the given angle.
 move :: Char -> TurtleState -> Float -> TurtleState
-move action ((x, y), angle) dir
-  | action == 'F' = ((newX, newY), angle)
-  | otherwise = ((x, y), newAngle)
+move action ((x, y), a) dir
+  | action == 'F' = ((x', y'), a)
+  | otherwise = ((x, y), a')
   where
-  angleRad = (pi * angle) / 180
-  (newX, newY) = (x + cos angleRad, y + sin angleRad)
-  newAngle = if action == 'L' then angle + dir else angle - dir
+    -- Conversion of degrees to radians
+    aRad = (pi * a) / 180
+    (x', y') = (x + cos aRad, y + sin aRad)
+    a' = if action == 'L' then a + dir else a - dir
 
+-- For the trace functions below, start the turtle at
+-- (0, 0) with an angle of 90 degrees anti-clockwise from x-axis
 initState :: TurtleState
 initState = ((0, 0), 90.0)
 
@@ -82,6 +85,8 @@ trace1 :: String -> Float -> Colour -> [ColouredLine]
 trace1 cmds rot col
   = trace1' initState cmds rot
   where
+    -- This function finds the corresponding bracket to an opening bracket
+    -- and returns the commands after this
     trace1FBrac (x : xs) count
       | x == '[' = trace1FBrac xs (count+1)
       | x == ']' =
@@ -89,16 +94,27 @@ trace1 cmds rot col
         then xs
         else trace1FBrac xs (count-1)
       | otherwise = trace1FBrac xs count
+    -- Base case: no more commands, so return the empty list
     trace1' _ [] _ = []
     trace1' pos (cmdH : cmdT) rot
+      -- If we hit a close bracket, return an empty trace
       | cmdH == ']' = []
+      -- If we hit an opening bracket, add together the commands between [ ]
+      -- and the remaining commands which follow the closing bracket
       | cmdH == '[' = (trace1' pos cmdT rot) ++
-						(trace1' pos (trace1FBrac cmdT 0) rot)
+                      (trace1' pos (trace1FBrac cmdT 0) rot)
+      -- When we hit an F command, add the new trace to the list and process
+      -- the remaining commands
       | cmdH == 'F' = ((x, y), (x', y'), col) : (trace1' pos' cmdT rot)
+      -- For an L or R, perform the move but don't trace into the output list
       | otherwise = trace1' pos' cmdT rot
       where
-		((x, y), a) = pos
-		pos'@((x', y'), a') = move cmdH ((x, y), a) rot
+        -- Pattern match on the input parameter
+        ((x, y), a) = pos
+        -- Pattern match on the move function
+        -- pos' is the new TurtleState object from the move function
+        -- Its components are x', y' and a' for the coordinates and angle
+        pos'@((x', y'), a') = move cmdH ((x, y), a) rot
 
 
 -- |Trace lines drawn by a turtle using the given colour, following the
@@ -109,16 +125,28 @@ trace2 :: String -> Float -> Colour -> [ColouredLine]
 trace2 cmds rot col
   = trace2' initState cmds rot [initState]
   where
+    -- Base case: if no commands left to process, return an empty list
     trace2' _ [] _ _ = []
     trace2' pos (cmdH : cmdT) rot tStates@(stateH : stateT)
+      -- If we reach a bracket, process the remaining commands and add
+      -- the current turtleState into the stack
       | cmdH == '[' = trace2' pos cmdT rot (pos : tStates)
+      -- If we reach a closing bracket, continue processing the next commands
+      -- but reset the turtleState back to the value in the top of the stack
       | cmdH == ']' = trace2' stateH cmdT rot stateT
+      -- If we reach an F command, add the new trace into the list
       | cmdH == 'F' = ((x, y), (x', y'), col) :
-						(trace2' pos' cmdT rot tStates)
+                      (trace2' pos' cmdT rot tStates)
+      -- For an L or R, perform the move but don't trace into the output list
       | otherwise = trace2' pos' cmdT rot tStates
       where
+        -- Pattern match on the input parameter
         ((x, y), a) = pos
+        -- Pattern match on the move function
+        -- pos' is the new TurtleState object from the move function
+        -- Its components are x', y' and a' for the coordinates and angle
         pos'@((x', y'), a') = move cmdH ((x, y), a) rot
+
 
 --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --  --
 --  Some test systems.
